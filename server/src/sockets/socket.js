@@ -1,5 +1,8 @@
 const Message = require('../models/Message');
 
+// Track online users: Map of userId -> socketId
+const onlineUsers = new Map();
+
 /**
  * Encapsulates all Socket.io logic for the application.
  * @param {object} io - The Socket.io server instance
@@ -7,6 +10,22 @@ const Message = require('../models/Message');
 const socketSetup = (io) => {
   io.on('connection', (socket) => {
     console.log('A user connected:', socket.id);
+
+    // Event: User identifies themselves after connection
+    socket.on('user_connected', (userId) => {
+      if (userId) {
+        onlineUsers.set(userId, socket.id);
+        socket.userId = userId; // Store for disconnect handling
+        console.log(`User ${userId} is now online`);
+
+        // Broadcast to all clients that this user is online
+        io.emit('user_online', userId);
+
+        // Send current online users list to the newly connected user
+        const onlineUserIds = Array.from(onlineUsers.keys());
+        socket.emit('online_users_list', onlineUserIds);
+      }
+    });
 
     // Event: User joins a specific chat room
     socket.on('join_chat', (chatId) => {
@@ -45,7 +64,16 @@ const socketSetup = (io) => {
     });
 
     socket.on('disconnect', () => {
-      console.log('User disconnected');
+      console.log('User disconnected:', socket.id);
+
+      // If the socket had an associated user, mark them offline
+      if (socket.userId) {
+        onlineUsers.delete(socket.userId);
+        console.log(`User ${socket.userId} is now offline`);
+
+        // Broadcast to all clients that this user is offline
+        io.emit('user_offline', socket.userId);
+      }
     });
   });
 };

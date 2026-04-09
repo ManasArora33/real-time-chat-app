@@ -2,14 +2,14 @@ import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import chatService from '../services/chatService';
 import { io } from 'socket.io-client';
-import { 
-  Search, 
-  Send, 
-  User as UserIcon, 
-  LogOut, 
-  MessageCircle, 
-  Menu, 
-  X, 
+import {
+  Search,
+  Send,
+  User as UserIcon,
+  LogOut,
+  MessageCircle,
+  Menu,
+  X,
   MoreHorizontal,
   Smile,
   Paperclip,
@@ -30,13 +30,14 @@ const ChatDashboard = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [socket, setSocket] = useState(null);
+  const [onlineUsers, setOnlineUsers] = useState(new Set()); // Track online user IDs
 
   // Search States
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [localSearchQuery, setLocalSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [currentSearchIndex, setCurrentSearchIndex] = useState(-1);
-  
+
   const messagesEndRef = useRef(null);
 
   // Auto-scroll to bottom whenever messages change
@@ -60,6 +61,41 @@ const ChatDashboard = () => {
   }, []);
 
   /**
+   * Effect: Handle socket online/offline status events
+   */
+  useEffect(() => {
+    if (socket && user) {
+      // Emit user_connected to register this user as online
+      socket.emit('user_connected', user._id);
+
+      // Listen for initial list of online users
+      socket.on('online_users_list', (onlineUserIds) => {
+        setOnlineUsers(new Set(onlineUserIds));
+      });
+
+      // Listen for users coming online
+      socket.on('user_online', (userId) => {
+        setOnlineUsers((prev) => new Set([...prev, userId]));
+      });
+
+      // Listen for users going offline
+      socket.on('user_offline', (userId) => {
+        setOnlineUsers((prev) => {
+          const newSet = new Set(prev);
+          newSet.delete(userId);
+          return newSet;
+        });
+      });
+
+      return () => {
+        socket.off('online_users_list');
+        socket.off('user_online');
+        socket.off('user_offline');
+      };
+    }
+  }, [socket, user]);
+
+  /**
    * Effect: Listen for incoming messages from the socket
    */
   useEffect(() => {
@@ -69,7 +105,7 @@ const ChatDashboard = () => {
         if (selectedChat && (message.chatId === selectedChat._id || message.chatId?._id === selectedChat._id)) {
           setMessages((prev) => [...prev, message]);
         }
-        
+
         // Also update the 'chats' list to show the latest message (optional enhancement)
 
       });
@@ -84,7 +120,7 @@ const ChatDashboard = () => {
       try {
         const chatsData = await chatService.getChats();
         setChats(chatsData);
-        
+
         const usersData = await chatService.getUsers();
         setUsers(usersData);
       } catch (error) {
@@ -198,7 +234,7 @@ const ChatDashboard = () => {
   return (
     <div className="flex h-screen bg-[#0f172a] text-white overflow-hidden">
       {/* Mobile Toggle */}
-      <button 
+      <button
         onClick={() => setIsSidebarOpen(!isSidebarOpen)}
         className="md:hidden fixed top-4 right-4 z-50 p-2 bg-blue-600 rounded-lg"
       >
@@ -229,9 +265,9 @@ const ChatDashboard = () => {
         <div className="p-4">
           <div className="relative group">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-blue-500" />
-            <input 
-              type="text" 
-              placeholder="Search users..." 
+            <input
+              type="text"
+              placeholder="Search users..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full bg-slate-900/50 border border-white/5 rounded-xl py-2.5 pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50"
@@ -245,16 +281,27 @@ const ChatDashboard = () => {
           {users
             .filter(u => u.username.toLowerCase().includes(searchTerm.toLowerCase()))
             .map((u) => (
-              <button 
+              <button
                 key={u._id}
                 onClick={() => handleSelectUser(u)}
                 className={`w-full flex items-center gap-3 p-3 rounded-xl transition-all ${selectedChat?.participants?.some(cu => cu._id === u._id) ? 'bg-blue-600/20 text-blue-400' : 'hover:bg-white/5 text-slate-300'}`}
               >
-                <div className="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center">
-                  <UserIcon size={20} />
+                <div className="relative">
+                  <div className="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center">
+                    <UserIcon size={20} />
+                  </div>
+                  {/* Online/Offline indicator */}
+                  <span
+                    className={`absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2 border-[#0f172a] ${onlineUsers.has(u._id) ? 'bg-green-500' : 'bg-slate-500'
+                      }`}
+                    title={onlineUsers.has(u._id) ? 'Online' : 'Offline'}
+                  />
                 </div>
                 <div className="flex-1 text-left">
                   <p className="font-medium text-sm">{u.username}</p>
+                  <p className={`text-xs ${onlineUsers.has(u._id) ? 'text-green-400' : 'text-slate-500'}`}>
+                    {onlineUsers.has(u._id) ? 'Online' : 'Offline'}
+                  </p>
                 </div>
               </button>
             ))}
@@ -262,7 +309,7 @@ const ChatDashboard = () => {
 
         {/* Logout Section */}
         <div className="p-4 border-t border-white/10">
-          <button 
+          <button
             onClick={logout}
             className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-red-500/10 text-slate-400 hover:text-red-500 transition-all font-medium text-sm"
           >
@@ -285,13 +332,19 @@ const ChatDashboard = () => {
                 <div>
                   <h2 className="font-bold text-lg">{getChatPartner(selectedChat)?.username}</h2>
                   <div className="flex items-center gap-1.5">
-                    <span className="w-2 h-2 bg-green-500 rounded-full"></span>
-                    <span className="text-xs text-slate-400">Online</span>
+                    <span
+                      className={`w-2 h-2 rounded-full ${onlineUsers.has(getChatPartner(selectedChat)?._id) ? 'bg-green-500' : 'bg-slate-500'
+                        }`}
+                    ></span>
+                    <span className={`text-xs ${onlineUsers.has(getChatPartner(selectedChat)?._id) ? 'text-green-400' : 'text-slate-500'
+                      }`}>
+                      {onlineUsers.has(getChatPartner(selectedChat)?._id) ? 'Online' : 'Offline'}
+                    </span>
                   </div>
                 </div>
               </div>
               <div className="flex items-center gap-4">
-                <button 
+                <button
                   onClick={() => {
                     setIsSearchOpen(!isSearchOpen);
                     if (isSearchOpen) {
@@ -302,9 +355,9 @@ const ChatDashboard = () => {
                   }}
                   className={`p-2 rounded-lg transition-all ${isSearchOpen ? 'bg-blue-600 text-white' : 'hover:bg-white/5 text-slate-400'}`}
                 >
-                  <Search size={20}/>
+                  <Search size={20} />
                 </button>
-                <button className="p-2 hover:bg-white/5 rounded-lg text-slate-400"><MoreHorizontal size={20}/></button>
+                <button className="p-2 hover:bg-white/5 rounded-lg text-slate-400"><MoreHorizontal size={20} /></button>
               </div>
             </div>
 
@@ -313,10 +366,10 @@ const ChatDashboard = () => {
               <div className="bg-slate-900/60 backdrop-blur-md border-b border-white/10 p-3 flex items-center justify-center animate-in slide-in-from-top duration-300 z-20">
                 <form onSubmit={handleSearch} className="flex items-center gap-3 bg-slate-800/50 rounded-xl px-4 py-1.5 border border-white/10 focus-within:border-blue-500/50 transition-all">
                   <Search size={16} className="text-slate-500" />
-                  <input 
+                  <input
                     autoFocus
-                    type="text" 
-                    placeholder="Search in conversation..." 
+                    type="text"
+                    placeholder="Search in conversation..."
                     className="bg-transparent border-none focus:ring-0 text-sm w-64"
                     value={localSearchQuery}
                     onChange={(e) => setLocalSearchQuery(e.target.value)}
@@ -336,7 +389,7 @@ const ChatDashboard = () => {
                       </div>
                     </div>
                   )}
-                  <button 
+                  <button
                     type="button"
                     onClick={() => {
                       setIsSearchOpen(false);
@@ -366,16 +419,16 @@ const ChatDashboard = () => {
                   const isCurrentMatch = currentSearchIndex >= 0 && searchResults[currentSearchIndex]?._id === msg._id;
 
                   return (
-                    <div 
-                      key={msg._id || i} 
+                    <div
+                      key={msg._id || i}
                       id={`msg-${msg._id}`}
                       className={`flex ${isMine ? 'justify-end' : 'justify-start'} animate-in fade-in slide-in-from-bottom-2 duration-300`}
                     >
                       <div className={`
                         max-w-[70%] p-4 rounded-2xl shadow-xl transition-all duration-500
                         ${isCurrentMatch ? 'ring-2 ring-blue-400 scale-105 shadow-blue-500/20' : ''}
-                        ${isMine 
-                          ? 'bg-blue-600 text-white rounded-br-none' 
+                        ${isMine
+                          ? 'bg-blue-600 text-white rounded-br-none'
                           : 'bg-white/10 backdrop-blur-md text-white border border-white/5 rounded-bl-none'}
                       `}>
                         <p className="text-[15px] leading-relaxed">{msg.content}</p>
@@ -394,8 +447,8 @@ const ChatDashboard = () => {
             <div className="p-6 bg-slate-900/40 backdrop-blur-md border-t border-white/10">
               <form onSubmit={handleSendMessage} className="max-w-4xl mx-auto flex items-end gap-4">
                 <div className="flex-1 bg-white/5 border border-white/10 rounded-2xl p-2.5 flex items-end gap-2 focus-within:ring-2 focus-within:ring-blue-500/50 transition-all">
-                  <button type="button" className="p-2 hover:bg-white/5 rounded-xl text-slate-400 transition-colors"><Smile size={20}/></button>
-                  <textarea 
+                  <button type="button" className="p-2 hover:bg-white/5 rounded-xl text-slate-400 transition-colors"><Smile size={20} /></button>
+                  <textarea
                     rows={1}
                     value={newMessage}
                     onChange={(e) => setNewMessage(e.target.value)}
@@ -408,9 +461,9 @@ const ChatDashboard = () => {
                     placeholder="Write a message..."
                     className="flex-1 bg-transparent border-none focus:ring-0 text-white py-2 px-1 resize-none max-h-32 text-sm"
                   />
-                  <button type="button" className="p-2 hover:bg-white/5 rounded-xl text-slate-400 transition-colors"><Paperclip size={20}/></button>
+                  <button type="button" className="p-2 hover:bg-white/5 rounded-xl text-slate-400 transition-colors"><Paperclip size={20} /></button>
                 </div>
-                <button 
+                <button
                   type="submit"
                   className="bg-blue-600 hover:bg-blue-500 text-white p-3.5 rounded-2xl shadow-lg shadow-blue-500/25 transform active:scale-95 transition-all h-[52px] w-[52px] flex items-center justify-center flex-shrink-0"
                 >
