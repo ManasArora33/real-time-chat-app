@@ -8,14 +8,28 @@
 
 NexChat is a production-ready, full-stack real-time chat application engineered for performance and aesthetics. Featuring a sleek **glassmorphic design**, **instant read receipts (blue ticks)**, and **mobile responsive design**, NexChat delivers a premium, native-app-like messaging experience directly in the browser.
 
-## ✨ Key Features
+## ✨ Comprehensive Feature List
 
-*   **⚡ Real-Time Engine**: Instant message delivery, typing indicators, and reliable online/offline status updates powered by robust Socket.io room broadcasting.
-*   **✅ Smart Read Receipts**: Live "blue tick" updates that fire the precise millisecond a recipient views your message—no page reloads required.
-*   **📱 Mobile Excellence**: Engineered with a fully fluid, dynamic layout that adapts perfectly to mobile screens and virtual keyboards, ensuring a buttery-smooth, native-app-like experience.
-*   **🎨 Glassmorphic UI**: A stunning, modern interface built with Tailwind CSS, featuring active blur filters, dynamic gradients, and professional typography.
-*   **🔒 Bulletproof Auth**: Secure, cross-origin session persistence using HTTP-only cookies and JWTs, optimized for hybrid cloud deployments.
-*   **🐳 Containerized Backend**: The Node.js server is fully Dockerized for consistent, scalable deployments.
+### 💬 Core Messaging
+*   **Instant One-to-One Messaging**: Seamless, zero-latency chatting powered by WebSockets.
+*   **Smart Read Receipts (Blue Ticks)**: Live "blue tick" updates that fire the precise millisecond a recipient views your message.
+*   **Delivery Status (Grey Ticks)**: Real-time confirmation when a message successfully reaches the recipient's active device.
+*   **Live Typing Indicators**: Immediate visual feedback when the person you are chatting with is typing.
+*   **Live Presence Tracking**: Accurate, real-time online/offline status indicators mapped to active socket connections.
+*   **Automated Catch-Up Delivery**: Automatically syncs and delivers any messages sent to you while you were offline the moment you reconnect.
+
+### 🔍 Discovery & Navigation
+*   **Global User Search**: Instantly find, filter, and initiate conversations with any registered user.
+*   **Message Search**: Quickly search through your active conversations and message histories for specific content.
+*   **Dynamic Chat History**: A dedicated, real-time updated sidebar preserving all your active conversations.
+
+### 🎨 Modern UI / UX
+*   **Light & Dark Mode**: Full theme-switching capabilities mapped to user preference for eye strain reduction.
+*   **Mobile Responsiveness**: A fluid layout engineered to perfectly adapt to mobile browser viewports and virtual keyboards.
+
+### 🛡️ Security & DevOps
+*   **Bulletproof Auth**: Secure, cross-origin session persistence using HTTP-only cookies and JWTs.
+*   **Containerized Backend**: The Node.js server is fully Dockerized for consistent, scalable hybrid-cloud deployments.
 
 ---
 
