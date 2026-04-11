@@ -1,8 +1,81 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Manrope:wght@200;300;400;500;600;700;800&display=swap');
 @import "tailwindcss";
+
+:root {
+  /* Obsidian Professional Theme - Dark Mode Defaults */
+  
+  --bg-main: #05070a;
+  --bg-sidebar: #07090f;
+  --surface: #05070a;
+  --surface-container-low: #0a0c12;
+  --surface-container-high: #12141c;
+  
+  --primary: #3b82f6;
+  --primary-glow: rgba(59, 130, 246, 0.4);
+  
+  --text-main: #f8fafc;
+  --text-muted: #94a3b8;
+  
+  --glass-bg: rgba(10, 12, 18, 0.7);
+  --glass-border: rgba(255, 255, 255, 0.05);
+}
+
+/* Light Mode Overrides */
+body.light-theme {
+  --bg-main: #f4f6fb;
+  --bg-sidebar: #eef1f8;
+  --surface: #ffffff;
+  --surface-container-low: #e8ecf4;
+  --surface-container-high: #dde3ef;
+
+  --primary: #3b82f6;
+  --primary-glow: rgba(59, 130, 246, 0.2);
+
+  --text-main: #0f172a;
+  --text-muted: #64748b;
+
+  --glass-bg: rgba(255, 255, 255, 0.7);
+  --glass-border: rgba(0, 0, 0, 0.07);
+}
+
+@theme {
+  --font-inter: "Inter", sans-serif;
+  --font-manrope: "Manrope", sans-serif;
+}
 
 body {
   margin: 0;
-  padding: 0;
+  font-family: var(--font-inter);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  background-color: var(--bg-main);
+  color: var(--text-main);
+  line-height: 1.6;
+}
+
+/* Surgical Glassmorphism */
+.glass-card {
+  background: var(--glass-bg);
+  backdrop-filter: blur(20px) saturate(160%);
+  border: 1px solid var(--glass-border);
+  box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.5);
+}
+
+/* Subtle Professional Glow */
+.glow-spot {
+  background: radial-gradient(circle at center, var(--primary-glow) 0, transparent 70%);
+}
+
+/* Custom Scrollbar */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
 }

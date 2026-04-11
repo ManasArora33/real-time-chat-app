@@ -1,49 +1,37 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
+import Home from './pages/Home';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import ChatDashboard from './pages/ChatDashboard';
 
 /**
  * ProtectedRoute Component
- * Redirects to /login if the user is not authenticated.
  */
 const ProtectedRoute = ({ children }) => {
   const { user, loading } = useAuth();
-
-  if (loading) return null; // Or a loading spinner
-
-  if (!user) {
-    return <Navigate to="/login" />;
-  }
-
+  if (loading) return null;
+  if (!user) return <Navigate to="/login" />;
   return children;
 };
 
 /**
  * PublicRoute Component
- * Redirects to / if the user is already authenticated.
  */
 const PublicRoute = ({ children }) => {
   const { user, loading } = useAuth();
-
   if (loading) return null;
-
-  if (user) {
-    return <Navigate to="/" />;
-  }
-
+  if (user) return <Navigate to="/chat" />;
   return children;
 };
 
-/**
- * App Component
- * Defines all application routes.
- */
 function App() {
   return (
     <Routes>
-      {/* Public Routes - Redirect to / if already logged in */}
+      {/* Landing Page */}
+      <Route path="/" element={<Home />} />
+
+      {/* Auth Routes */}
       <Route
         path="/login"
         element={
@@ -61,9 +49,9 @@ function App() {
         }
       />
 
-      {/* Protected Routes */}
+      {/* Workspace */}
       <Route
-        path="/"
+        path="/chat"
         element={
           <ProtectedRoute>
             <ChatDashboard />
@@ -71,7 +59,7 @@ function App() {
         }
       />
 
-      {/* Catch-all redirect */}
+      {/* Catch-all redirect to chat if logged in, else home */}
       <Route path="*" element={<Navigate to="/" />} />
     </Routes>
   );
