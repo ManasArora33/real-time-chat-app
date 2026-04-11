@@ -83,6 +83,16 @@ export const ChatProvider = ({ children }) => {
       socket.on('receive_message', (message) => {
         if (selectedChat && (message.chatId === selectedChat._id || message.chatId?._id === selectedChat._id)) {
           setMessages((prev) => [...prev, message]);
+
+          // Instantly send a read receipt if we are actively viewing this chat
+          const senderIdStr = typeof message.senderId === 'object' ? message.senderId._id : message.senderId;
+          if (senderIdStr !== user._id) {
+            socket.emit('mark_read', {
+              chatId: selectedChat._id,
+              userId: user._id,
+              senderId: senderIdStr,
+            });
+          }
         }
       });
 
