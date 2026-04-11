@@ -110,7 +110,7 @@ const ChatPreview = () => {
 
 const Home = () => {
   return (
-    <div className="min-h-screen bg-[var(--bg-main)] text-[var(--text-main)] overflow-x-hidden selection:bg-blue-500/30">
+    <div className="min-h-[100dvh] bg-[var(--bg-main)] text-[var(--text-main)] overflow-x-hidden selection:bg-blue-500/30">
       
       {/* PROFESSIONAL LAYER: CLEAN AMBIANCE */}
       <div className="fixed top-[-10%] left-[-5%] w-[40%] h-[40%] bg-blue-600/5 rounded-full blur-[140px]" />

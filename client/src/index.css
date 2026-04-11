@@ -51,6 +51,7 @@ body {
   background-color: var(--bg-main);
   color: var(--text-main);
   line-height: 1.6;
+  overscroll-behavior: none; /* Prevent annoying mobile bounce/refresh effect */
 }
 
 /* Surgical Glassmorphism */

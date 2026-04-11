@@ -30,7 +30,7 @@ const ChatDashboard = () => {
   }
 
   return (
-    <div className="flex h-screen bg-[var(--bg-main)] text-[var(--text-main)] overflow-hidden font-inter transition-colors duration-200">
+    <div className="flex h-[100dvh] bg-[var(--bg-main)] text-[var(--text-main)] overflow-hidden font-inter transition-colors duration-200">
       
       {/* SIDEBAR */}
       <Sidebar isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen} />

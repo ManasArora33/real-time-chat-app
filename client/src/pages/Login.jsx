@@ -28,7 +28,7 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[var(--bg-main)] flex flex-col items-center justify-center p-4 transition-colors duration-200">
+    <div className="min-h-[100dvh] bg-[var(--bg-main)] flex flex-col items-center justify-center p-4 transition-colors duration-200">
       {/* Dynamic Background Blurs */}
       <div className="absolute top-1/4 left-1/4 w-72 h-72 bg-indigo-600/10 rounded-full blur-[120px]" />
       <div className="absolute bottom-1/4 right-1/4 w-72 h-72 bg-blue-600/10 rounded-full blur-[120px]" />

@@ -50,7 +50,7 @@ const Sidebar = React.memo(({ isSidebarOpen, setIsSidebarOpen }) => {
           "bg-[var(--bg-sidebar)] border-[var(--glass-border)] backdrop-blur-3xl",
           isSidebarOpen 
             ? "w-[280px] md:w-[320px] translate-x-0" 
-            : "w-0 md:w-0 -translate-x-full md:translate-x-0"
+            : "w-[280px] md:w-0 -translate-x-full md:translate-x-0"
         )}
       >
         {/* User Header */}
