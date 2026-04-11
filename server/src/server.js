@@ -18,6 +18,9 @@ connectDB();
 
 const app = express();
 
+// Trust Render's proxy for secure cookies
+app.set('trust proxy', 1);
+
 // Middleware
 app.use(express.json());
 app.use(cookieParser());
