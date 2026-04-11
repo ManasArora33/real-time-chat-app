@@ -15,14 +15,24 @@ const messageSchema = new mongoose.Schema(
       ref: 'User',
       required: true,
     },
+    recipientId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: true,
+    },
     content: {
       type: String,
       required: [true, 'Message content cannot be empty'],
       trim: true,
     },
+    status: {
+      type: String,
+      enum: ['sent', 'delivered', 'read'],
+      default: 'sent',
+    },
   },
   {
-    timestamps: true, // Automatically adds createdAt and updatedAt fields
+    timestamps: true,
   }
 );
 

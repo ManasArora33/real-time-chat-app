@@ -1,5 +1,5 @@
 import { useEffect, useRef, memo } from 'react';
-import { MessageCircle, ShieldCheck } from 'lucide-react';
+import { MessageCircle, Check, CheckCheck } from 'lucide-react';
 import { useChat } from '../../context/ChatContext';
 import { useAuth } from '../../context/AuthContext';
 import { clsx } from 'clsx';
@@ -10,8 +10,24 @@ function cn(...inputs) {
 }
 
 /**
+ * StatusTick: Renders the read receipt indicator for sent messages.
+ *  - sent      → single grey check
+ *  - delivered → double grey checks
+ *  - read      → double blue checks
+ */
+const StatusTick = ({ status }) => {
+  if (status === 'read') {
+    return <CheckCheck size={14} className="text-blue-400" />;
+  }
+  if (status === 'delivered') {
+    return <CheckCheck size={14} className="text-[var(--text-muted)] opacity-60" />;
+  }
+  // 'sent' or undefined
+  return <Check size={14} className="text-[var(--text-muted)] opacity-40" />;
+};
+
+/**
  * MessageList Component
- * Instant performance version. Removed Framer Motion to eliminate scroll lag.
  */
 const MessageList = memo(() => {
   const { user } = useAuth();
@@ -51,10 +67,7 @@ const MessageList = memo(() => {
             <div
               key={msg._id || i}
               id={`msg-${msg._id}`}
-              className={cn(
-                "flex",
-                isMine ? 'justify-end' : 'justify-start'
-              )}
+              className={cn("flex", isMine ? 'justify-end' : 'justify-start')}
             >
               <div className={cn(
                 "relative max-w-[85%] md:max-w-[60%] flex flex-col",
@@ -75,13 +88,14 @@ const MessageList = memo(() => {
                 </div>
 
                 <div className={cn(
-                   "flex items-center gap-2 mt-2 px-1",
+                   "flex items-center gap-1.5 mt-2 px-1",
                    isMine ? "flex-row-reverse" : "flex-row"
                 )}>
                   <span className="text-[10px] font-bold text-[var(--text-muted)] tracking-tighter opacity-60">
                     {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </span>
-                  {isMine && <ShieldCheck size={12} className="text-indigo-400 opacity-60" />}
+                  {/* Only show ticks on messages sent by the current user */}
+                  {isMine && <StatusTick status={msg.status} />}
                 </div>
               </div>
             </div>

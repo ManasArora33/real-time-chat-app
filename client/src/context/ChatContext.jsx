@@ -76,12 +76,32 @@ export const ChatProvider = ({ children }) => {
         });
       });
 
+
       // Message Receiver
       socket.on('receive_message', (message) => {
-        // Only append if it belongs to current active chat
         if (selectedChat && (message.chatId === selectedChat._id || message.chatId?._id === selectedChat._id)) {
           setMessages((prev) => [...prev, message]);
         }
+      });
+
+      // Status: Delivered — update grey ticks in real-time
+      socket.on('messages_delivered', () => {
+        setMessages((prev) =>
+          prev.map((msg) =>
+            msg.status === 'sent' ? { ...msg, status: 'delivered' } : msg
+          )
+        );
+      });
+
+      // Read Receipt: Read — update blue ticks in real-time
+      socket.on('messages_read', ({ chatId }) => {
+        setMessages((prev) =>
+          prev.map((msg) =>
+            (msg.chatId === chatId || msg.chatId?._id === chatId) && msg.status !== 'read'
+              ? { ...msg, status: 'read' }
+              : msg
+          )
+        );
       });
 
       // Typing Listeners
@@ -94,6 +114,8 @@ export const ChatProvider = ({ children }) => {
         socket.off('user_online');
         socket.off('user_offline');
         socket.off('receive_message');
+        socket.off('messages_delivered');
+        socket.off('messages_read');
         socket.off('user_typing');
         socket.off('user_stop_typing');
       };
@@ -121,7 +143,7 @@ export const ChatProvider = ({ children }) => {
    * Effect 4: Handle Room Joining & Initial Message Fetching.
    */
   useEffect(() => {
-    if (selectedChat && socket) {
+    if (selectedChat && socket && user) {
       const fetchMessages = async () => {
         try {
           const msgs = await chatService.getMessages(selectedChat._id);
@@ -132,10 +154,19 @@ export const ChatProvider = ({ children }) => {
       };
       fetchMessages();
 
-      // Join the chat room on the server
       socket.emit('join_chat', selectedChat._id);
+
+      // Fire mark_read: tell server to mark all partner's messages as read
+      const partner = selectedChat.participants?.find(p => p._id !== user._id);
+      if (partner) {
+        socket.emit('mark_read', {
+          chatId: selectedChat._id,
+          userId: user._id,
+          senderId: partner._id,
+        });
+      }
     }
-  }, [selectedChat, socket]);
+  }, [selectedChat, socket, user]);
 
   /**
    * Effect 5: Debounced Global User Discovery.
@@ -201,16 +232,18 @@ export const ChatProvider = ({ children }) => {
   const handleSendMessage = (content) => {
     if (!content.trim() || !selectedChat || !socket) return;
 
-    // Clear typing indicator if active
     if (typingTimeoutRef.current) {
       clearTimeout(typingTimeoutRef.current);
       socket.emit('stop_typing', selectedChat._id);
     }
 
+    // Include recipientId so server can auto-deliver if they're online
+    const partner = selectedChat.participants?.find(p => p._id !== user._id);
     const messageData = {
       chatId: selectedChat._id,
       senderId: user._id,
       content,
+      recipientId: partner?._id,
     };
 
     socket.emit('send_message', messageData);
