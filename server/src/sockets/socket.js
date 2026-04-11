@@ -33,6 +33,18 @@ const socketSetup = (io) => {
       console.log(`User joined room: ${chatId}`);
     });
 
+    // Event: User starts typing
+    socket.on('typing', (data) => {
+      const { chatId, username } = data;
+      // We use .to(chatId) but we exclude the sender (socket.to)
+      socket.to(chatId).emit('user_typing', { username });
+    });
+
+    // Event: User stops typing
+    socket.on('stop_typing', (chatId) => {
+      socket.to(chatId).emit('user_stop_typing');
+    });
+
     // Event: User sends a message
     socket.on('send_message', async (data) => {
       const { chatId, senderId, content } = data;

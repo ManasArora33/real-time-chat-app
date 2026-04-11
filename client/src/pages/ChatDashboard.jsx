@@ -23,12 +23,14 @@ const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000';
 const ChatDashboard = () => {
   const { user, logout } = useAuth();
   const [chats, setChats] = useState([]);
-  const [users, setUsers] = useState([]);
   const [selectedChat, setSelectedChat] = useState(null);
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [isSearchLoading, setIsSearchLoading] = useState(false);
+  const [globalSearchResults, setGlobalSearchResults] = useState([]);
+  const isSearching = searchTerm.trim().length > 0;
   const [socket, setSocket] = useState(null);
   const [onlineUsers, setOnlineUsers] = useState(new Set()); // Track online user IDs
 
@@ -37,6 +39,10 @@ const ChatDashboard = () => {
   const [localSearchQuery, setLocalSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [currentSearchIndex, setCurrentSearchIndex] = useState(-1);
+
+  // Typing Indicator States
+  const [typingUser, setTypingUser] = useState(null);
+  const typingTimeoutRef = useRef(null);
 
   const messagesEndRef = useRef(null);
 
@@ -114,21 +120,67 @@ const ChatDashboard = () => {
     }
   }, [socket, selectedChat]);
 
+  /**
+   * Effect: Listen for typing indicator events
+   */
+  useEffect(() => {
+    if (socket) {
+      socket.on('user_typing', (data) => {
+        setTypingUser(data.username);
+      });
+
+      socket.on('user_stop_typing', () => {
+        setTypingUser(null);
+      });
+
+      return () => {
+        socket.off('user_typing');
+        socket.off('user_stop_typing');
+      };
+    }
+  }, [socket]);
+
   // Fetch initial data: chats and available users
   useEffect(() => {
     const fetchData = async () => {
       try {
         const chatsData = await chatService.getChats();
         setChats(chatsData);
-
-        const usersData = await chatService.getUsers();
-        setUsers(usersData);
       } catch (error) {
         console.error('Error fetching dashboard data:', error);
       }
     };
     fetchData();
   }, []);
+
+  /**
+   * Effect: Debounced User Search
+   * This pings the server only after the user stops typing for 500ms
+   */
+  useEffect(() => {
+    // If search is empty, just clear the results and stop
+    if (!searchTerm.trim()) {
+      setGlobalSearchResults([]);
+      setIsSearchLoading(false);
+      return;
+    }
+
+    setIsSearchLoading(true);
+
+    const debounceTimer = setTimeout(async () => {
+      try {
+        const results = await chatService.getUsers(searchTerm);
+        setGlobalSearchResults(results);
+      } catch (error) {
+        console.error('Search failed:', error);
+      } finally {
+        setIsSearchLoading(false);
+      }
+    }, 500);
+
+    // CLEANUP: This cancels the timer if the user types again before 500ms
+    return () => clearTimeout(debounceTimer);
+  }, [searchTerm]);
 
   // Handle chat selection and room joining
   useEffect(() => {
@@ -149,11 +201,22 @@ const ChatDashboard = () => {
     }
   }, [selectedChat, socket]);
 
+  /**
+   * Helper: Select an existing conversation and handle UI state
+   */
+  const selectConversation = (chat) => {
+    setSelectedChat(chat);
+    setSearchTerm(''); // Clear search when a chat is selected
+    if (window.innerWidth < 768) setIsSidebarOpen(false);
+  };
+
+  /**
+   * Helper: Find/Create a chat for a specific user, then select it
+   */
   const handleSelectUser = async (targetUser) => {
     try {
       const chat = await chatService.createOrGetChat(targetUser._id);
-      setSelectedChat(chat);
-      if (window.innerWidth < 768) setIsSidebarOpen(false);
+      selectConversation(chat);
     } catch (error) {
       console.error('Error starting chat:', error);
     }
@@ -162,6 +225,12 @@ const ChatDashboard = () => {
   const handleSendMessage = async (e) => {
     e.preventDefault();
     if (!newMessage.trim() || !selectedChat || !socket) return;
+
+    // Immediately stop the typing indicator when message is sent
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+      socket.emit('stop_typing', selectedChat._id);
+    }
 
     const messageData = {
       chatId: selectedChat._id,
@@ -172,6 +241,27 @@ const ChatDashboard = () => {
     // Emit the message to the server
     socket.emit('send_message', messageData);
     setNewMessage('');
+  };
+
+  /**
+   * Helper: Handle typing events with a debounce timer
+   */
+  const handleTyping = () => {
+    if (!socket || !selectedChat) return;
+
+    // Emit the typing event to the server
+    socket.emit('typing', {
+      chatId: selectedChat._id,
+      username: user.username
+    });
+
+    // Clear the existing timeout if user is still typing
+    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+
+    // Set a new timeout to stop the typing indicator after 2 seconds of inactivity
+    typingTimeoutRef.current = setTimeout(() => {
+      socket.emit('stop_typing', selectedChat._id);
+    }, 2000);
   };
 
   const getChatPartner = (chat) => {
@@ -275,36 +365,85 @@ const ChatDashboard = () => {
           </div>
         </div>
 
-        {/* User List */}
+        {/* List Section */}
         <div className="flex-1 overflow-y-auto px-2 space-y-1 custom-scrollbar">
-          <div className="px-3 py-2 text-[10px] uppercase tracking-wider text-slate-500 font-bold">Direct Messages</div>
-          {users
-            .filter(u => u.username.toLowerCase().includes(searchTerm.toLowerCase()))
-            .map((u) => (
-              <button
-                key={u._id}
-                onClick={() => handleSelectUser(u)}
-                className={`w-full flex items-center gap-3 p-3 rounded-xl transition-all ${selectedChat?.participants?.some(cu => cu._id === u._id) ? 'bg-blue-600/20 text-blue-400' : 'hover:bg-white/5 text-slate-300'}`}
-              >
-                <div className="relative">
-                  <div className="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center">
-                    <UserIcon size={20} />
-                  </div>
-                  {/* Online/Offline indicator */}
-                  <span
-                    className={`absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2 border-[#0f172a] ${onlineUsers.has(u._id) ? 'bg-green-500' : 'bg-slate-500'
-                      }`}
-                    title={onlineUsers.has(u._id) ? 'Online' : 'Offline'}
-                  />
+          {!isSearching ? (
+            <>
+              <div className="px-3 py-2 text-[10px] uppercase tracking-wider text-slate-500 font-bold">Recent Conversations</div>
+              {chats.length === 0 ? (
+                <div className="px-3 py-8 text-center">
+                  <p className="text-xs text-slate-500 whitespace-normal">No chats yet. Search for a friend to start talking!</p>
                 </div>
-                <div className="flex-1 text-left">
-                  <p className="font-medium text-sm">{u.username}</p>
-                  <p className={`text-xs ${onlineUsers.has(u._id) ? 'text-green-400' : 'text-slate-500'}`}>
-                    {onlineUsers.has(u._id) ? 'Online' : 'Offline'}
-                  </p>
+              ) : (
+                chats.map((chat) => {
+                  const partner = getChatPartner(chat);
+                  const isSelected = selectedChat?._id === chat._id;
+                  if (!partner) return null;
+
+                  return (
+                    <button
+                      key={chat._id}
+                      onClick={() => selectConversation(chat)}
+                      className={`w-full flex items-center gap-3 p-3 rounded-xl transition-all ${isSelected ? 'bg-blue-600/20 text-blue-400' : 'hover:bg-white/5 text-slate-300'}`}
+                    >
+                      <div className="relative">
+                        <div className="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center">
+                          <UserIcon size={20} />
+                        </div>
+                        <span
+                          className={`absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2 border-[#0f172a] ${onlineUsers.has(partner._id) ? 'bg-green-500' : 'bg-slate-500'}`}
+                        />
+                      </div>
+                      <div className="flex-1 text-left">
+                        <p className="font-medium text-sm">{partner.username}</p>
+                        <p className={`text-xs ${onlineUsers.has(partner._id) ? 'text-green-400' : 'text-slate-500'}`}>
+                          {onlineUsers.has(partner._id) ? 'Online' : 'Offline'}
+                        </p>
+                      </div>
+                    </button>
+                  );
+                })
+              )}
+            </>
+          ) : (
+            <>
+              <div className="px-3 py-2 text-[10px] uppercase tracking-wider text-blue-500 font-bold flex items-center gap-2">
+                Global Discovery {isSearchLoading && <span className="w-2 h-2 bg-blue-500 rounded-full animate-ping"></span>}
+              </div>
+              {globalSearchResults.length === 0 && !isSearchLoading ? (
+                <div className="px-3 py-8 text-center">
+                  <p className="text-xs text-slate-500">No users found matching "{searchTerm}"</p>
                 </div>
-              </button>
-            ))}
+              ) : (
+                globalSearchResults.map((u) => {
+                  const isAlreadyInChat = chats.some(c => c.participants.some(p => p._id === u._id));
+                  return (
+                    <button
+                      key={u._id}
+                      onClick={() => handleSelectUser(u)}
+                      className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-white/5 text-slate-300 transition-all border border-transparent hover:border-white/5"
+                    >
+                      <div className="relative">
+                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-slate-800 to-slate-900 flex items-center justify-center">
+                          <UserIcon size={20} className="text-slate-500" />
+                        </div>
+                        <span
+                          className={`absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2 border-[#0f172a] ${onlineUsers.has(u._id) ? 'bg-green-500' : 'bg-slate-500'}`}
+                        />
+                      </div>
+                      <div className="flex-1 text-left">
+                        <p className="font-medium text-sm flex items-center gap-2">
+                          {u.username}
+                          {isAlreadyInChat && <span className="text-[9px] bg-white/10 px-1.5 py-0.5 rounded text-slate-500">Chatting</span>}
+                        </p>
+                        <p className="text-[10px] text-slate-500 truncate">{u.email}</p>
+                      </div>
+                    </button>
+                  );
+                })
+              )}
+            </>
+          )}
         </div>
 
         {/* Logout Section */}
@@ -331,15 +470,30 @@ const ChatDashboard = () => {
                 </div>
                 <div>
                   <h2 className="font-bold text-lg">{getChatPartner(selectedChat)?.username}</h2>
-                  <div className="flex items-center gap-1.5">
-                    <span
-                      className={`w-2 h-2 rounded-full ${onlineUsers.has(getChatPartner(selectedChat)?._id) ? 'bg-green-500' : 'bg-slate-500'
-                        }`}
-                    ></span>
-                    <span className={`text-xs ${onlineUsers.has(getChatPartner(selectedChat)?._id) ? 'text-green-400' : 'text-slate-500'
-                      }`}>
-                      {onlineUsers.has(getChatPartner(selectedChat)?._id) ? 'Online' : 'Offline'}
-                    </span>
+                  <div className="flex items-center h-5">
+                    {typingUser ? (
+                      <div className="flex items-center gap-2 bg-blue-500/10 px-2 py-0.5 rounded-full border border-blue-500/20 animate-in fade-in zoom-in duration-300">
+                        <div className="flex gap-1">
+                          <span className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-pulse"></span>
+                          <span className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-pulse [animation-delay:200ms]"></span>
+                          <span className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-pulse [animation-delay:400ms]"></span>
+                        </div>
+                        <span className="text-[10px] text-blue-400 font-bold uppercase tracking-wider">
+                          Typing
+                        </span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-1.5">
+                        <span
+                          className={`w-2 h-2 rounded-full ${onlineUsers.has(getChatPartner(selectedChat)?._id) ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)]' : 'bg-slate-500'
+                            }`}
+                        ></span>
+                        <span className={`text-xs font-medium ${onlineUsers.has(getChatPartner(selectedChat)?._id) ? 'text-green-400' : 'text-slate-500'
+                          }`}>
+                          {onlineUsers.has(getChatPartner(selectedChat)?._id) ? 'Online' : 'Offline'}
+                        </span>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -414,7 +568,7 @@ const ChatDashboard = () => {
                 </div>
               ) : (
                 messages.map((msg, i) => {
-                  const isMine = msg.senderId === user._id || msg.senderId?._id === user._id;
+                  const isMine = msg.senderId === user._id || msg.senderId?._id === user._id
                   const isSearchResult = searchResults.some(res => res._id === msg._id);
                   const isCurrentMatch = currentSearchIndex >= 0 && searchResults[currentSearchIndex]?._id === msg._id;
 
@@ -451,7 +605,10 @@ const ChatDashboard = () => {
                   <textarea
                     rows={1}
                     value={newMessage}
-                    onChange={(e) => setNewMessage(e.target.value)}
+                    onChange={(e) => {
+                      setNewMessage(e.target.value);
+                      handleTyping();
+                    }}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' && !e.shiftKey) {
                         e.preventDefault();

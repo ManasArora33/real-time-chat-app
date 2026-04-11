@@ -31,11 +31,13 @@ const chatService = {
   },
 
   /**
-   * Fetch all registered users (except the logged-in user).
-   * This is used to search for people to start a new chat with.
+   * Fetch users from the backend.
+   * @param {string} searchTerm - Optional search query to filter users.
    */
-  getUsers: async () => {
-    const response = await api.get('/users');
+  getUsers: async (searchTerm = '') => {
+    const response = await api.get('/users', {
+      params: { search: searchTerm }
+    });
     return response.data;
   },
 

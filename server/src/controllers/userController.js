@@ -8,8 +8,17 @@ const User = require('../models/User');
  */
 const getUsers = async (req, res) => {
   try {
-    // req.user._id is available because we use the 'protect' middleware
-    const users = await User.find({ _id: { $ne: req.user._id } });
+    const { search } = req.query;
+    
+    // Base query: Always exclude the currently logged-in user
+    let query = { _id: { $ne: req.user._id } };
+
+    // If a search term is provided, add regex filtering to the query
+    if (search) {
+      query.username = { $regex: search, $options: 'i' };
+    }
+
+    const users = await User.find(query).select('-password');
     res.status(200).json(users);
   } catch (error) {
     res.status(500).json({ message: error.message });
