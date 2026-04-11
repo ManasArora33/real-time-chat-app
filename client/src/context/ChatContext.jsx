@@ -26,6 +26,8 @@ export const ChatProvider = ({ children }) => {
   const [messages, setMessages] = useState([]);
   const [socket, setSocket] = useState(null);
   const [onlineUsers, setOnlineUsers] = useState(new Set());
+  const [isChatsLoading, setIsChatsLoading] = useState(true);
+  const [isMessagesLoading, setIsMessagesLoading] = useState(false);
 
   // -- SEARCH & DISCOVERY STATES --
   const [searchTerm, setSearchTerm] = useState('');
@@ -128,11 +130,14 @@ export const ChatProvider = ({ children }) => {
   useEffect(() => {
     if (user) {
       const fetchChatsData = async () => {
+        setIsChatsLoading(true);
         try {
           const chatsData = await chatService.getChats();
           setChats(chatsData);
         } catch (err) {
           console.error('Error fetching chats:', err);
+        } finally {
+          setIsChatsLoading(false);
         }
       };
       fetchChatsData();
@@ -145,11 +150,14 @@ export const ChatProvider = ({ children }) => {
   useEffect(() => {
     if (selectedChat && socket && user) {
       const fetchMessages = async () => {
+        setIsMessagesLoading(true);
         try {
           const msgs = await chatService.getMessages(selectedChat._id);
           setMessages(msgs);
         } catch (err) {
           console.error('Error fetching messages:', err);
+        } finally {
+          setIsMessagesLoading(false);
         }
       };
       fetchMessages();
@@ -342,6 +350,8 @@ export const ChatProvider = ({ children }) => {
     handleSendMessage,
     handleTyping,
     socket,
+    isChatsLoading,
+    isMessagesLoading,
   };
 
   return <ChatContext.Provider value={value}>{children}</ChatContext.Provider>;

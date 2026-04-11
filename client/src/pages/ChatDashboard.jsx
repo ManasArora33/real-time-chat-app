@@ -1,19 +1,20 @@
 import { useState } from 'react';
 import { MessageCircle, Menu } from 'lucide-react';
 import { useChat } from '../context/ChatContext';
-import { useEffect } from 'react';
+import Loader from '../components/ui/Loader';
 // Import our modular components
 import Sidebar from '../components/chat/Sidebar';
 import MessageHeader from '../components/chat/MessageHeader';
 import MessageList from '../components/chat/MessageList';
 import MessageInput from '../components/chat/MessageInput';
+import { useEffect } from 'react';
 
 /**
  * ChatDashboard Component
  * Instant version - all animation overhead removed for maximum responsiveness.
  */
 const ChatDashboard = () => {
-  const { selectedChat } = useChat();
+  const { selectedChat, isChatsLoading } = useChat();
   const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth > 768);
 
   // Auto-close sidebar on mobile when a chat is selected
@@ -22,6 +23,11 @@ const ChatDashboard = () => {
       setIsSidebarOpen(false);
     }
   }, [selectedChat]);
+
+  // Handle global conversation synchronization (Render cold start)
+  if (isChatsLoading) {
+    return <Loader fullScreen message="Syncing your workspace..." />;
+  }
 
   return (
     <div className="flex h-screen bg-[var(--bg-main)] text-[var(--text-main)] overflow-hidden font-inter transition-colors duration-200">

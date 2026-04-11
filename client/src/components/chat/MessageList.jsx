@@ -31,7 +31,7 @@ const StatusTick = ({ status }) => {
  */
 const MessageList = memo(() => {
   const { user } = useAuth();
-  const { messages, searchResults, currentSearchIndex } = useChat();
+  const { messages, searchResults, currentSearchIndex, isMessagesLoading } = useChat();
   const messagesEndRef = useRef(null);
 
   const scrollToBottom = () => {
@@ -41,6 +41,15 @@ const MessageList = memo(() => {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  if (isMessagesLoading) {
+    return (
+      <div className="flex-1 flex flex-col items-center justify-center space-y-4 bg-[var(--bg-main)]">
+        <div className="w-8 h-8 border-4 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin" />
+        <p className="text-sm font-medium text-[var(--text-muted)] tracking-wide uppercase">Securing messages...</p>
+      </div>
+    );
+  }
 
   if (messages.length === 0) {
     return (

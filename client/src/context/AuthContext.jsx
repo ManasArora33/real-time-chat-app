@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import authService from '../services/authService';
-
+import Loader from '../components/ui/Loader';
 // Create the Context object
 const AuthContext = createContext();
 
@@ -87,7 +87,7 @@ export const AuthProvider = ({ children }) => {
 
   return (
     <AuthContext.Provider value={value}>
-      {!loading && children}
+      {loading ? <Loader fullScreen message="Identifying your session..." /> : children}
     </AuthContext.Provider>
   );
 };
