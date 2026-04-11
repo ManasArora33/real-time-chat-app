@@ -32,10 +32,10 @@ const MessageInput = memo(() => {
 
   return (
     <div className="p-3 md:p-6 bg-[var(--bg-main)]">
-      <form onSubmit={onSubmit} className="max-w-4xl mx-auto flex items-end gap-3 relative z-10">
+      <form onSubmit={onSubmit} className="w-full max-w-4xl mx-auto flex items-end gap-2 md:gap-3 relative z-10">
         
         {/* Attachment & Tools */}
-        <div className="flex bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-2xl p-1 mb-0.5 shadow-sm">
+        <div className="flex shrink-0 bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-2xl p-1 mb-0.5 shadow-sm">
            <button 
              type="button" 
              className="p-2.5 text-[var(--text-muted)] hover:text-indigo-500 transition-colors rounded-xl outline-none"
@@ -46,7 +46,7 @@ const MessageInput = memo(() => {
 
         {/* Input Bar */}
         <div className={cn(
-          "flex-1 bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-[24px] p-2 flex items-end gap-2 transition-colors duration-200 shadow-sm",
+          "flex-1 min-w-0 bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-[24px] p-2 flex items-end gap-1 md:gap-2 transition-colors duration-200 shadow-sm",
           "focus-within:border-indigo-500/30 focus-within:ring-2 focus-within:ring-indigo-500/10"
         )}>
           <button 
