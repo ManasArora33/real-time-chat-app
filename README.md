@@ -6,7 +6,7 @@
 
 ### 🌐 **Live Demo: [https://nexchat-i2mg.onrender.com/](https://nexchat-i2mg.onrender.com/)**
 
-NexChat is a production-ready, full-stack real-time chat application engineered for performance and aesthetics. Featuring a sleek **glassmorphic design**, **instant read receipts (blue ticks)**, and **GPU-accelerated mobile responsiveness**, NexChat delivers a premium, native-app-like messaging experience directly in the browser.
+NexChat is a production-ready, full-stack real-time chat application engineered for performance and aesthetics. Featuring a sleek **glassmorphic design**, **instant read receipts (blue ticks)**, and **mobile responsive design**, NexChat delivers a premium, native-app-like messaging experience directly in the browser.
 
 ## ✨ Key Features
 
