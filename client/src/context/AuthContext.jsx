@@ -23,15 +23,23 @@ export const AuthProvider = ({ children }) => {
    * Effect: Check for session on initial load.
    */
   useEffect(() => {
-    const checkAuthStatus = async () => {
+    const checkAuthStatus = async (retryCount = 0) => {
       try {
         const data = await authService.getMe();
         setUser(data.user);
+        setLoading(false); // Success, hide loader
       } catch (error) {
-        console.log('No active session found.');
-        setUser(null);
-      } finally {
-        setLoading(false);
+        // Render free-tier cold starts may return 502/503 or Network Errors before booting.
+        // We ONLY clear the session if the server EXPLICITLY says the token is invalid (401).
+        if (error.response?.status === 401 || retryCount >= 12) {
+          console.log('No active session found or max retries reached.');
+          setUser(null);
+          setLoading(false); // Token is invalid, hide loader and show login
+        } else {
+          // If it's a network error or 50x error (cold start), wait 5s and try again
+          console.log(`Server waking up (cold start detected). Retrying... Attempt ${retryCount + 1}/12`);
+          setTimeout(() => checkAuthStatus(retryCount + 1), 5000);
+        }
       }
     };
 
