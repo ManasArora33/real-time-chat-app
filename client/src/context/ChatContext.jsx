@@ -97,11 +97,14 @@ export const ChatProvider = ({ children }) => {
       });
 
       // Status: Delivered — update grey ticks in real-time
-      socket.on('messages_delivered', () => {
+      socket.on('messages_delivered', ({ deliveredBy }) => {
         setMessages((prev) =>
-          prev.map((msg) =>
-            msg.status === 'sent' ? { ...msg, status: 'delivered' } : msg
-          )
+          prev.map((msg) => {
+            const recipientIdStr = typeof msg.recipientId === 'object' ? msg.recipientId._id : msg.recipientId;
+            return (msg.status === 'sent' && recipientIdStr === deliveredBy) 
+              ? { ...msg, status: 'delivered' } 
+              : msg;
+          })
         );
       });
 
