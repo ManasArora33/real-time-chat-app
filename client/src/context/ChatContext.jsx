@@ -239,7 +239,7 @@ export const ChatProvider = ({ children }) => {
   const handleSelectUser = async (targetUser) => {
     try {
       const chat = await chatService.createOrGetChat(targetUser._id);
-      
+
       // Update chats list if this is a new conversation locally
       setChats((prev) => {
         const exists = prev.find(c => c._id === chat._id);

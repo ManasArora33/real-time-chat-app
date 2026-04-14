@@ -4,6 +4,7 @@ import Home from './pages/Home';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import ChatDashboard from './pages/ChatDashboard';
+import Loader from './components/ui/Loader';
 
 /**
  * ProtectedRoute Component

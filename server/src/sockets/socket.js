@@ -40,7 +40,7 @@ const socketSetup = (io) => {
 
             // 3. Notify the senders of these messages that they've been delivered
             const senderIds = [...new Set(undeliveredMessages.map(m => m.senderId.toString()))];
-            
+
             senderIds.forEach(senderId => {
               const senderSocketId = onlineUsers.get(senderId);
               if (senderSocketId) {
