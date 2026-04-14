@@ -101,8 +101,8 @@ export const ChatProvider = ({ children }) => {
         setMessages((prev) =>
           prev.map((msg) => {
             const recipientIdStr = typeof msg.recipientId === 'object' ? msg.recipientId._id : msg.recipientId;
-            return (msg.status === 'sent' && recipientIdStr === deliveredBy) 
-              ? { ...msg, status: 'delivered' } 
+            return (msg.status === 'sent' && recipientIdStr === deliveredBy)
+              ? { ...msg, status: 'delivered' }
               : msg;
           })
         );
