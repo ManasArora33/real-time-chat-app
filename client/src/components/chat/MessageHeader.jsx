@@ -30,7 +30,7 @@ const MessageHeader = React.memo(({ isSidebarOpen, setIsSidebarOpen }) => {
   const {
     selectedChat,
     onlineUsers,
-    typingUser,
+    typingUsers,
     isSearchOpen,
     setIsSearchOpen,
     localSearchQuery,
@@ -51,6 +51,7 @@ const MessageHeader = React.memo(({ isSidebarOpen, setIsSidebarOpen }) => {
 
   const partner = getChatPartner(selectedChat);
   const isOnline = onlineUsers.has(partner?._id);
+  const isTyping = selectedChat && typingUsers[selectedChat._id];
 
   const toggleSearch = () => {
     setIsSearchOpen(!isSearchOpen);
@@ -91,7 +92,7 @@ const MessageHeader = React.memo(({ isSidebarOpen, setIsSidebarOpen }) => {
                 <Info size={14} className="opacity-20 hover:opacity-100 cursor-pointer transition-opacity text-[var(--text-main)]" />
               </h2>
               <div className="flex items-center h-4 mt-0.5">
-                {typingUser ? (
+                {isTyping ? (
                   <div className="flex items-center gap-2">
                     <span className="text-[10px] text-indigo-500 font-bold uppercase tracking-widest animate-pulse">
                       Typing...

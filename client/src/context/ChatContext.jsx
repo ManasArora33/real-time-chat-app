@@ -39,7 +39,7 @@ export const ChatProvider = ({ children }) => {
   const [localSearchQuery, setLocalSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [currentSearchIndex, setCurrentSearchIndex] = useState(-1);
-  const [typingUser, setTypingUser] = useState(null);
+  const [typingUsers, setTypingUsers] = useState({});
   const typingTimeoutRef = useRef(null);
 
   /**
@@ -117,8 +117,16 @@ export const ChatProvider = ({ children }) => {
       });
 
       // Typing Listeners
-      socket.on('user_typing', (data) => setTypingUser(data.username));
-      socket.on('user_stop_typing', () => setTypingUser(null));
+      socket.on('user_typing', (data) => {
+        setTypingUsers((prev) => ({ ...prev, [data.chatId]: data.username }));
+      });
+      socket.on('user_stop_typing', (chatId) => {
+        setTypingUsers((prev) => {
+          const newState = { ...prev };
+          delete newState[chatId];
+          return newState;
+        });
+      });
 
       // Cleanup
       return () => {
@@ -339,7 +347,7 @@ export const ChatProvider = ({ children }) => {
     selectedChat,
     messages,
     onlineUsers,
-    typingUser,
+    typingUsers,
     searchTerm,
     setSearchTerm,
     globalSearchResults,

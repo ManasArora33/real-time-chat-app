@@ -65,12 +65,12 @@ const socketSetup = (io) => {
     // Event: User starts typing
     socket.on('typing', (data) => {
       const { chatId, username } = data;
-      socket.to(chatId).emit('user_typing', { username });
+      socket.to(chatId).emit('user_typing', { chatId, username });
     });
 
     // Event: User stops typing
     socket.on('stop_typing', (chatId) => {
-      socket.to(chatId).emit('user_stop_typing');
+      socket.to(chatId).emit('user_stop_typing', chatId);
     });
 
     // Event: User sends a message
