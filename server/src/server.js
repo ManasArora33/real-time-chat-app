@@ -13,52 +13,62 @@ const userRoutes = require('./routes/userRoutes');
 const chatRoutes = require('./routes/chatRoutes');
 const messageRoutes = require('./routes/messageRoutes');
 
-// Connect to Database
-connectDB();
+// Start Server function
+const startServer = async () => {
+  try {
+    // Connect to Database
+    await connectDB();
 
-const app = express();
+    const app = express();
 
-// Trust Render's proxy for secure cookies
-app.set('trust proxy', 1);
+    // Trust Render's proxy for secure cookies
+    app.set('trust proxy', 1);
 
-// Middleware
-app.use(express.json());
-app.use(cookieParser());
+    // Middleware
+    app.use(express.json());
+    app.use(cookieParser());
 
-// CORS setup
-app.use(cors({
-  origin: process.env.CLIENT_URL || 'http://localhost:5173',
-  credentials: true,
-}));
+    // CORS setup
+    app.use(cors({
+      origin: process.env.CLIENT_URL || 'http://localhost:5173',
+      credentials: true,
+    }));
 
-// Basic route
-app.get('/', (req, res) => {
-  res.send('Chat App API is running...');
-});
+    // Basic route
+    app.get('/', (req, res) => {
+      res.send('Chat App API is running...');
+    });
 
-// Routes
-app.use('/api/auth', authRoutes);
-app.use('/api/users', userRoutes);
-app.use('/api/chat', chatRoutes);
-app.use('/api/message', messageRoutes);
+    // Routes
+    app.use('/api/auth', authRoutes);
+    app.use('/api/users', userRoutes);
+    app.use('/api/chat', chatRoutes);
+    app.use('/api/message', messageRoutes);
 
-const server = http.createServer(app);
+    const server = http.createServer(app);
 
-// Initialize Socket.io
-const io = new Server(server, {
-  cors: {
-    origin: process.env.CLIENT_URL || 'http://localhost:5173',
-    methods: ['GET', 'POST'],
-    credentials: true,
-  },
-});
+    // Initialize Socket.io
+    const io = new Server(server, {
+      cors: {
+        origin: process.env.CLIENT_URL || 'http://localhost:5173',
+        methods: ['GET', 'POST'],
+        credentials: true,
+      },
+    });
 
-// Port setting
-const PORT = process.env.PORT || 5000;
+    const socketSetup = require('./sockets/socket');
+    socketSetup(io);
 
-server.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+    // Port setting
+    const PORT = process.env.PORT || 5000;
 
-const socketSetup = require('./sockets/socket');
-socketSetup(io);
+    server.listen(PORT, () => {
+      console.log(`Server running on port ${PORT}`);
+    });
+  } catch (error) {
+    console.error('Failed to start server:', error);
+    process.exit(1);
+  }
+};
+
+startServer();
