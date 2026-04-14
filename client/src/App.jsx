@@ -10,7 +10,7 @@ import ChatDashboard from './pages/ChatDashboard';
  */
 const ProtectedRoute = ({ children }) => {
   const { user, loading } = useAuth();
-  if (loading) return null;
+  if (loading) return <Loader fullScreen message="Identifying your session..." />;
   if (!user) return <Navigate to="/login" />;
   return children;
 };
@@ -20,7 +20,7 @@ const ProtectedRoute = ({ children }) => {
  */
 const PublicRoute = ({ children }) => {
   const { user, loading } = useAuth();
-  if (loading) return null;
+  if (loading) return <Loader fullScreen message="Identifying your session..." />;
   if (user) return <Navigate to="/chat" />;
   return children;
 };

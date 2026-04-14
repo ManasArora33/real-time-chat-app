@@ -99,7 +99,7 @@ export const AuthProvider = ({ children }) => {
 
   return (
     <AuthContext.Provider value={value}>
-      {loading ? <Loader fullScreen message="Identifying your session..." /> : children}
+      {children}
     </AuthContext.Provider>
   );
 };
