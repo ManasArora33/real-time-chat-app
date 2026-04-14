@@ -120,7 +120,7 @@ const socketSetup = (io) => {
         );
 
         // Broadcast to the whole chat room so UI (blue ticks) updates reliably across multiple tabs/devices
-        io.to(chatId).emit('messages_read', { chatId, readBy: userId });
+        io.to(chatId).emit('messages_read', { chatId,senderId, readBy: userId });
       } catch (error) {
         console.error('Error marking messages as read:', error.message);
       }

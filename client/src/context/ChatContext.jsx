@@ -109,13 +109,14 @@ export const ChatProvider = ({ children }) => {
       });
 
       // Read Receipt: Read — update blue ticks in real-time
-      socket.on('messages_read', ({ chatId }) => {
+      socket.on('messages_read', ({ chatId, senderId }) => {
         setMessages((prev) =>
-          prev.map((msg) =>
-            (msg.chatId === chatId || msg.chatId?._id === chatId) && msg.status !== 'read'
+          prev.map((msg) => {
+            const msgSenderId = msg.senderId?._id || msg.senderId;
+            return (msg.chatId === chatId || msg.chatId?._id === chatId) && msg.status !== 'read' && msgSenderId === senderId
               ? { ...msg, status: 'read' }
-              : msg
-          )
+              : msg;
+          })
         );
       });
 
